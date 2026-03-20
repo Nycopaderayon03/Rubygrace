@@ -246,10 +246,16 @@ export default function TeacherResults() {
                   e.preventDefault();
                   e.stopPropagation();
                   setSelectedCourse(selectedCourse === course.id ? null : course.id);
-                } role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') { ((e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setSelectedCourse(selectedCourse === course.id ? null : course.id);)(); } }}}
+                }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedCourse(selectedCourse === course.id ? null : course.id);
+                  }
+                }}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
