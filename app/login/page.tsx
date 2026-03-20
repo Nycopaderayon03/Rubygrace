@@ -166,9 +166,9 @@ export default function LoginPage() {
 
               {/* Email Input */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <div className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Institutional Email
-                </label>
+                </div>
                 <input
                   type="email"
                   value={email}
@@ -181,9 +181,9 @@ export default function LoginPage() {
 
               {/* Password Input */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <div className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Password
-                </label>
+                </div>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}

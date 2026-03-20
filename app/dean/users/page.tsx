@@ -387,9 +387,9 @@ export default function Users() {
             placeholder="Enter email address"
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Role
-            </label>
+            </div>
             <select
               className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               value={form.role}
@@ -404,9 +404,9 @@ export default function Users() {
 
           {form.role === 'student' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Course
-              </label>
+              </div>
               <select
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={form.course}

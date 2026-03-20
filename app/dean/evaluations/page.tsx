@@ -515,7 +515,7 @@ export default function Evaluations() {
 
         {/* Eval Detail Modal */}
         {selectedEval && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedEval(null)}>
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedEval(null)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') { (setSelectedEval(null))(); } }}>
             <Card className="w-full max-w-2xl max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
               <CardHeader className="border-b flex flex-row justify-between items-center">
                 <div>

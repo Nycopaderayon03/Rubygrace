@@ -126,9 +126,9 @@ export default function Settings() {
               onChange={(e) => setSettings({ ...settings, institutionCode: e.target.value })}
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Academic Calendar Type
-              </label>
+              </div>
               <select
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.academicCalendar}
@@ -179,9 +179,9 @@ export default function Settings() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Evaluation Scale
-              </label>
+              </div>
               <select
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 value={settings.evaluationScale}

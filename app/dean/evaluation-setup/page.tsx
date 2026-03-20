@@ -685,7 +685,7 @@ export default function EvaluationSetupPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Academic Period (read-only, from active period) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Academic Period</label>
+              <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Academic Period</div>
               {selectedAcademicPeriod ? (
                 <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 text-sm flex items-center gap-2">
                   <span>{selectedAcademicPeriod.name}</span>
@@ -725,13 +725,13 @@ export default function EvaluationSetupPage() {
             {selectedAcademicPeriod && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Academic Year</label>
+                  <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Academic Year</div>
                   <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 text-sm">
                     {academicYear}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Semester</label>
+                  <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Semester</div>
                   <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 text-sm">
                     {semester}
                   </div>
@@ -747,7 +747,7 @@ export default function EvaluationSetupPage() {
               helperText="Optional custom prefix for the evaluation name"
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Name Preview</label>
+              <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Name Preview</div>
               <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 text-sm">
                 {generatedName}
               </div>
@@ -840,7 +840,7 @@ export default function EvaluationSetupPage() {
                   {/* Group Header */}
                   <div
                     className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 cursor-pointer"
-                    onClick={() => toggleGroupCollapse(group.id)}
+                    onClick={() => toggleGroupCollapse(group.id)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') { (toggleGroupCollapse(group.id))(); } }}
                   >
                     <div className="flex items-center gap-3">
                       {group.collapsed
@@ -1085,7 +1085,7 @@ export default function EvaluationSetupPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Evaluation Status</label>
+              <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Evaluation Status</div>
               <div className="flex gap-4 mb-3">
                 {(['draft', 'active', 'closed'] as const).map(s => (
                   <label key={s} className="inline-flex items-center gap-2 cursor-pointer">

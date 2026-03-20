@@ -20,7 +20,7 @@ export const StepAcademicPeriod: React.FC<StepAcademicPeriodProps> = ({ data, on
   <div className="max-w-xl mx-auto p-8 bg-white rounded-lg shadow-md">
     <h2 className="text-2xl font-bold mb-6 text-center">Step 1: Academic Period</h2>
     <div className="mb-6">
-      <label className="block text-lg font-semibold mb-1">Academic Year</label>
+      <div className="block text-lg font-semibold mb-1">Academic Year</div>
       <input
         type="text"
         className="w-full p-3 text-lg border rounded focus:outline-blue-500"
@@ -31,7 +31,7 @@ export const StepAcademicPeriod: React.FC<StepAcademicPeriodProps> = ({ data, on
       <p className="text-gray-600 text-sm mt-1">Enter the academic year (e.g., 2025–2026).</p>
     </div>
     <div className="mb-6">
-      <label className="block text-lg font-semibold mb-1">Semester</label>
+      <div className="block text-lg font-semibold mb-1">Semester</div>
       <select
         className="w-full p-3 text-lg border rounded focus:outline-blue-500"
         value={data.semester}
@@ -45,7 +45,7 @@ export const StepAcademicPeriod: React.FC<StepAcademicPeriodProps> = ({ data, on
       <p className="text-gray-600 text-sm mt-1">Choose the semester for this academic period.</p>
     </div>
     <div className="mb-6">
-      <label className="block text-lg font-semibold mb-1">Start Date</label>
+      <div className="block text-lg font-semibold mb-1">Start Date</div>
       <input
         type="date"
         className="w-full p-3 text-lg border rounded focus:outline-blue-500"
@@ -55,7 +55,7 @@ export const StepAcademicPeriod: React.FC<StepAcademicPeriodProps> = ({ data, on
       <p className="text-gray-600 text-sm mt-1">Select the start date of the academic period.</p>
     </div>
     <div className="mb-6">
-      <label className="block text-lg font-semibold mb-1">End Date</label>
+      <div className="block text-lg font-semibold mb-1">End Date</div>
       <input
         type="date"
         className="w-full p-3 text-lg border rounded focus:outline-blue-500"

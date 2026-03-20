@@ -32,6 +32,11 @@ export function Sidebar({ items, title, className = '' }: SidebarProps) {
       {/* Sidebar overlay for mobile */}
       {Boolean(isOpen) && (
         <div
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') setIsOpen(false);
+          }}
           className="fixed inset-0 bg-black/50 z-30 md:hidden"
           onClick={() => setIsOpen(false)}
         />
@@ -58,7 +63,7 @@ export function Sidebar({ items, title, className = '' }: SidebarProps) {
                 {item.icon}
                 <span className="font-medium">{item.label}</span>
               </div>
-              {item.badge && (
+              {Boolean(item.badge) && (
                 <span className="bg-purple-600 text-white text-xs rounded-full px-2 py-1">
                   {item.badge}
                 </span>
