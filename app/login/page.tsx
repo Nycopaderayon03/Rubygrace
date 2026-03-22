@@ -233,6 +233,7 @@ export default function LoginPage() {
               <div className="flex justify-center items-center w-full py-2">
                 <ReCAPTCHA
                   sitekey="6Ld6eJMsAAAAABdiQZuwfYyWptTppshpF3ufaA7b"
+                  type="audio"
                   onChange={(token) => setCaptchaToken(token)}
                   theme={theme === 'dark' ? 'dark' : 'light'}
                 />

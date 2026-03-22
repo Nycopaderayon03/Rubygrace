@@ -450,6 +450,7 @@ function SignUpContent() {
                 <div className="md:col-span-2 flex justify-center w-full py-2">
                   <ReCAPTCHA
                     sitekey="6Ld6eJMsAAAAABdiQZuwfYyWptTppshpF3ufaA7b"
+                    type="audio"
                     onChange={(token) => setCaptchaToken(token)}
                   />
                 </div>
