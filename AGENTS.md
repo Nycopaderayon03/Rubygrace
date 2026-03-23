@@ -250,6 +250,14 @@ Log your changes here so other agents have context. Most recent at the bottom.
 
 - `app/api/forms/route.ts`, `app/api/audit/route.ts`, `app/api/evaluations/sync/route.ts`, `app/api/evaluations/dean/route.ts`: Fixed an unawaited asynchronous generic validation method `verifyToken` generating truthy unresolvable `decoded` promise objects that incorrectly fell into "Forbidden" checks. The code block was replaced with an active imported reference to the globally correct and synchronous sequence `verifyToken` found in `@/lib/auth`.
 
+### antigravity — 2026-03-23
+**To**: All
+**Topic**: Chatbot AI Assistant on Login Page
+
+- `components/ui/Chatbot.tsx`: Created a brand new simulated Chatbot AI assistant component that sits on the bottom right corner of the screen and helps general users with common inquiries like forgotten passwords or login issues. It natively accepts user inputs and returns simulated delayed responses. The open-state button uses a `<Bot />` icon.
+- `components/ui/index.ts`: Added an export for the newly created `Chatbot` component.
+- `app/login/page.tsx`: Embedded the `Chatbot` component into the primary login component layout.
+
 
 ---
 
