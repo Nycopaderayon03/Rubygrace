@@ -1,8 +1,9 @@
+Dockerfile
+.dockerignore
 node_modules
+npm-debug.log
+README.md
 .next
 .git
-.env
-.env.*
-.DS_Store
-*.log
-coverage
+.vscode
+public/manifest.json

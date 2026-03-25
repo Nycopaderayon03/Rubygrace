@@ -1,0 +1,69 @@
+# Deployment Plan for College Evaluation System (CITE_ES)
+
+## 1. Prerequisites
+- Target Server or Virtual Machine (Platform: Ubuntu, Debian, or Windows/WSL)
+- Docker Desktop or Docker Engine installed
+- Docker Compose installed
+- Git installed (for cloning repository to target environment)
+- A domain name correctly pointing to the server's IP address (optional but recommended)
+
+## 2. Environment Setup & Configuration
+1. Navigate to the deployment directory and clone/copy the application repository.
+2. Duplicate `.env.local` or `.env.example` into a production `.env` file.
+3. Update the critical variables for the production environment:
+   - `NODE_ENV=production`
+   - `DB_HOST=db` (Docker resolves this via its internal network)
+   - `DB_USER=root`
+   - `DB_PASSWORD=your_secure_password_here` (Ensure to update this in `docker-compose.yml` too)
+   - `DB_NAME=cite_es`
+   - `NEXT_PUBLIC_API_URL=https://your-domain.com/api` (Crucial for client-side fetches)
+   - Ensure you specify a strong `JWT_SECRET` for production token security.
+
+## 3. Building and Starting the Application
+The repository uses a multi-stage `Dockerfile` standalone build logic along with `docker-compose.yml` for database orchestration.
+1. From the project root, build and start both `web` and `db` services in detached mode:
+   ```bash
+   docker-compose up --build -d
+   ```
+2. The MySQL container will initialize automatically and run on port 3306.
+3. The Next.js web container will run the standalone optimized build on port 3000.
+
+## 4. Web Server & SSL Integration (Nginx / Apache)
+Instead of exposing port 3000 directly to the internet, you should configure a Reverse Proxy.
+1. Install Nginx or Apache on the host machine.
+2. Route standard HTTP/HTTPS traffic (Ports 80 & 443) directly into `http://127.0.0.1:3000`.
+3. Generate FREE SSL/TLS coverage via Let's Encrypt / Certbot (`certbot --nginx`) to fully secure the authentication and evaluation payload transit.
+
+## 5. Database Migrations and Initialization
+If `docker-entrypoint-initdb.d` volume mount didn't run the initial schema, you can run migrations manually inside the running container.
+1. Open a bash session in the Next.js container:
+   ```bash
+   docker-compose exec web sh
+   ```
+2. Inject the SQL schema tables manually by executing:
+   ```bash
+   npm run db:migrate
+   ```
+3. Initialize the default Administrator account:
+   ```bash
+   npm run db:admin
+   ```
+4. Optional: If you need sample data, inject the testing seed:
+   ```bash
+   npm run db:seed
+   ```
+
+## 6. Post-Deployment Quality Assurance
+- Navigate to your production URL via a web browser.
+- Verify that standard pages load without any 500 errors.
+- Test Admin Login using `admin@cite.edu` (if configured by db:admin).
+- Observe container logs to verify both the `Node.js` instance and `MySQL` database are running correctly without panics:
+  ```bash
+  docker-compose logs -f web
+  docker-compose logs -f db
+  ```
+
+## 7. Ongoing Maintenance
+- The `docker-compose.yml` is configured with `restart: unless-stopped`, which provides high uptime automatic service recoveries.
+- Schedule recurring internal automated MySQL dumps (Backups) mapping data out of the `db_data` Docker volume.
+- Regularly review user `audit_logs` securely inside the application Dean dashboard.

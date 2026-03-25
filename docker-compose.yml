@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=cite_es_password
+      - DB_NAME=cite_es
+      - NEXT_PUBLIC_API_URL=http://localhost:8080/api
+      - JWT_SECRET=production_safe_jwt_secret_key_12345
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id_here
+      - GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+      - RECAPTCHA_SECRET_KEY=your_recaptcha_secret_key_here
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_network
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=cite_es_password
+      - MYSQL_DATABASE=cite_es
+    volumes:
+      - db_data:/var/lib/mysql
+      # Map the schema logic to auto-initialize if DB is empty
+      - ./database:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+    restart: unless-stopped
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  db_data:
