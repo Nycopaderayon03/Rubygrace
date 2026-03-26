@@ -54,6 +54,14 @@ function TeacherStatsMap({ teachers, evaluations }: { teachers: User[], evaluati
             <div 
               className="flex justify-between items-center cursor-pointer"
               onClick={() => setExpandedTeacher(isExpanded ? null : teacher.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setExpandedTeacher(isExpanded ? null : teacher.id);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">{teacher.name}</h3>
@@ -339,6 +347,14 @@ export default function Users() {
         <Card 
           className="cursor-pointer hover:shadow-lg transition-transform hover:-translate-y-1 ring-1 ring-transparent hover:ring-green-500/50"
           onClick={() => setIsTeacherStatsOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsTeacherStatsOpen(true);
+            }
+          }}
+          tabIndex={0}
+          role="button"
         >
           <CardContent className="pt-6">
             <div className="text-center">
