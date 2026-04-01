@@ -336,6 +336,7 @@ Log your changes here so other agents have context. Most recent at the bottom.
 - `app/api/evaluations/route.ts`: Fixed period submission validation to avoid false "Submissions are only accepted during the evaluation period" errors when server timezone differs from campus timezone.
   - Added timezone-safe date helper using `APP_TIMEZONE` with fallback to `Asia/Manila`.
   - If period status is already `active`, submission is allowed and not blocked by timezone date mismatch.
+- `lib/db.ts`: Corrected unique-index metadata parsing in schema bootstrap (`non_unique` normalization) to avoid false duplicate-index migrations and startup warning noise.
 - Validation:
   - `npm run type-check` passes.
 

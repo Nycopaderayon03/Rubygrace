@@ -74,8 +74,11 @@ async function ensureSchemaCompatibility() {
     for (const row of (Array.isArray(indexRows) ? indexRows : [])) {
       const indexName = String((row as any).index_name || '');
       if (!indexName) continue;
-      const item = indexMap.get(indexName) || { nonUnique: Number((row as any).non_unique || 1), columns: [] };
-      item.nonUnique = Number((row as any).non_unique || 1);
+      const nonUniqueValue = (row as any).non_unique;
+      const normalizedNonUnique =
+        nonUniqueValue === null || nonUniqueValue === undefined ? 1 : Number(nonUniqueValue);
+      const item = indexMap.get(indexName) || { nonUnique: normalizedNonUnique, columns: [] };
+      item.nonUnique = normalizedNonUnique;
       item.columns.push(String((row as any).column_name || '').toLowerCase());
       indexMap.set(indexName, item);
     }
