@@ -21,6 +21,15 @@ type EvalRequest = {
   action?: 'generate'; // for admin bulk operations
 };
 
+function getCurrentDateInTimeZone(timeZone: string) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
 // GET evaluations for the logged-in user
 // support optional query parameters ?type=peer|teacher&status=locked|submitted
 /**
@@ -515,13 +524,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if (evalRecord?.start_date && evalRecord?.end_date) {
-      // Compare dates in local time only (ignore time component).
-      // Date-only strings like "2026-03-20" are parsed as UTC midnight,
-      // which causes timezone mismatches vs local new Date(). Strip to
-      // YYYY-MM-DD and compare as plain date strings instead.
-      const nowDate = new Date();
-      const today = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
+    // If a period is already marked active, allow submissions even when
+    // server timezone differs from school timezone (e.g. UTC vs Asia/Manila).
+    if (evalRecord?.period_status !== 'active' && evalRecord?.start_date && evalRecord?.end_date) {
+      const appTimeZone = process.env.APP_TIMEZONE || 'Asia/Manila';
+      const today = getCurrentDateInTimeZone(appTimeZone);
       const startDate = String(evalRecord.start_date).slice(0, 10);
       const endDate = String(evalRecord.end_date).slice(0, 10);
       if (today < startDate || today > endDate) {

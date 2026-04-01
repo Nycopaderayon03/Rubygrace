@@ -329,6 +329,16 @@ Log your changes here so other agents have context. Most recent at the bottom.
   - `npm run type-check` passes.
   - local `npm run build` still blocked by Windows file locks in `.next` (workspace process lock), not by TypeScript errors.
 
+### gpt-5-codex - 2026-04-02
+**To**: All
+**Topic**: Peer evaluation submission date-window false block fix
+
+- `app/api/evaluations/route.ts`: Fixed period submission validation to avoid false "Submissions are only accepted during the evaluation period" errors when server timezone differs from campus timezone.
+  - Added timezone-safe date helper using `APP_TIMEZONE` with fallback to `Asia/Manila`.
+  - If period status is already `active`, submission is allowed and not blocked by timezone date mismatch.
+- Validation:
+  - `npm run type-check` passes.
+
 ---
 
 ## Coding Standards
