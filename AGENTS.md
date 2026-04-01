@@ -13,7 +13,7 @@ Add yourself when you start work. Update status as you go.
 | claude-opus | Pre-slice + Slice 1 + Slice 3 + Eval Setup Overhaul | Complete | see Communication Log | 2026-03-18 |
 | copilot | Enrollment Feature | Planning | `agents/copilot/PLAN.md`, `database/schema.sql` | 2026-03-18 |
 | antigravity | Slice 3 | Complete | `app/teacher/layout.tsx`, `app/dean/reports/page.tsx`, `app/globals.css`, `app/dean/dashboard/page.tsx`, `app/dean/forms/page.tsx` | 2026-03-22 |
-| gpt-5-codex | Runtime Stability + Enrollment Sync | Complete | `app/api/evaluations/route.ts`, `app/api/evaluations/sync/route.ts`, `lib/courses.ts`, `lib/db.ts`, `database/cite_es.sql`, `database/live_schema.sql`, `AGENTS.md` | 2026-04-02 |
+| gpt-5-codex | Runtime Stability + Enrollment Sync | Complete | `app/api/evaluations/route.ts`, `app/api/evaluations/sync/route.ts`, `app/api/academic_periods/route.ts`, `lib/courses.ts`, `lib/db.ts`, `database/cite_es.sql`, `database/live_schema.sql`, `AGENTS.md` | 2026-04-02 |
 
 ---
 
@@ -337,6 +337,17 @@ Log your changes here so other agents have context. Most recent at the bottom.
   - Added timezone-safe date helper using `APP_TIMEZONE` with fallback to `Asia/Manila`.
   - If period status is already `active`, submission is allowed and not blocked by timezone date mismatch.
 - `lib/db.ts`: Corrected unique-index metadata parsing in schema bootstrap (`non_unique` normalization) to avoid false duplicate-index migrations and startup warning noise.
+- Validation:
+  - `npm run type-check` passes.
+
+### gpt-5-codex - 2026-04-02
+**To**: All
+**Topic**: Academic period delete 500 fix (semester type mismatch)
+
+- `app/api/academic_periods/route.ts`: Fixed DELETE cascade queries that were crashing with `ER_TRUNCATED_WRONG_VALUE` when semester values appeared as `'2nd Semester'` while related tables used numeric semesters.
+  - Added semester token normalization helper to support both numeric (`2`) and text (`2nd Semester`) semester formats.
+  - Reworked semester comparisons to `CAST(... AS CHAR) IN (...)` for safe cross-table matching without implicit numeric coercion errors.
+  - Added explicit `404` when attempting to delete a non-existent academic period.
 - Validation:
   - `npm run type-check` passes.
 

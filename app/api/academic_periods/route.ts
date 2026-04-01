@@ -3,6 +3,43 @@ import { query, queryOne } from '@/lib/db';
 import { verifyToken, getAuthToken } from '@/lib/auth';
 
 
+function normalizeSemesterTokens(raw: any) {
+  const text = String(raw ?? '').trim();
+  const lower = text.toLowerCase();
+
+  let semesterNum: number | null = null;
+  if (lower === '1' || lower === '1st' || lower === '1st semester') {
+    semesterNum = 1;
+  } else if (lower === '2' || lower === '2nd' || lower === '2nd semester') {
+    semesterNum = 2;
+  } else if (lower === '3' || lower === '3rd' || lower === '3rd semester' || lower === 'summer') {
+    semesterNum = 3;
+  } else {
+    const parsed = Number.parseInt(text, 10);
+    if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 3) {
+      semesterNum = parsed;
+    }
+  }
+
+  const labels = new Set<string>();
+  if (text) labels.add(text);
+  if (semesterNum === 1) {
+    labels.add('1');
+    labels.add('1st Semester');
+  } else if (semesterNum === 2) {
+    labels.add('2');
+    labels.add('2nd Semester');
+  } else if (semesterNum === 3) {
+    labels.add('3');
+    labels.add('Summer');
+    labels.add('3rd Semester');
+  }
+
+  const [s1 = '', s2 = '', s3 = ''] = Array.from(labels);
+  return { s1, s2, s3 };
+}
+
+
 
 /**
  * Handles the HTTP GET request securely.
@@ -185,48 +222,71 @@ export async function DELETE(request: NextRequest) {
     }
 
     const targetPeriod: any = await queryOne('SELECT * FROM academic_periods WHERE id = ?', [id]);
-
-    if (targetPeriod) {
-      // Deep cascade: Purge anonymous textual feedbacks submitted during this specific academic timeframe
-      await query(
-        'DELETE FROM comments WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?', 
-        [targetPeriod.start_date, targetPeriod.end_date]
-      );
-
-      // Deep cascade: Nuke active enrollments attached to courses mapped under this academic semester
-      await query(
-        'DELETE FROM course_enrollments WHERE course_id IN (SELECT id FROM courses WHERE academic_year = ? AND semester = ?)', 
-        [targetPeriod.academic_year, targetPeriod.semester]
-      );
-
-      // Deep cascade: Delete the physical courses generated and attached to this academic semantic frame
-      await query(
-        'DELETE FROM courses WHERE academic_year = ? AND semester = ?', 
-        [targetPeriod.academic_year, targetPeriod.semester]
-      );
+    if (!targetPeriod) {
+      return NextResponse.json({ error: 'Academic period not found' }, { status: 404 });
     }
+
+    const { s1: semToken1, s2: semToken2, s3: semToken3 } = normalizeSemesterTokens(targetPeriod.semester);
+
+    // Deep cascade: Purge anonymous textual feedbacks submitted during this specific academic timeframe
+    await query(
+      'DELETE FROM comments WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?', 
+      [targetPeriod.start_date, targetPeriod.end_date]
+    );
+
+    // Deep cascade: Nuke active enrollments attached to courses mapped under this academic semester
+    await query(
+      `DELETE FROM course_enrollments
+       WHERE course_id IN (
+         SELECT id FROM courses
+         WHERE academic_year = ?
+           AND CAST(semester AS CHAR) IN (?, ?, ?)
+       )`,
+      [targetPeriod.academic_year, semToken1, semToken2, semToken3]
+    );
+
+    // Deep cascade: Delete the physical courses generated and attached to this academic semantic frame
+    await query(
+      `DELETE FROM courses
+       WHERE academic_year = ?
+         AND CAST(semester AS CHAR) IN (?, ?, ?)`,
+      [targetPeriod.academic_year, semToken1, semToken2, semToken3]
+    );
 
     // Deep cascade: Delete all evaluation responses linked to evaluations inside this academic period
     await query(
       `DELETE er FROM evaluation_responses er
        JOIN evaluations e ON er.evaluation_id = e.id
        JOIN evaluation_periods ep ON e.period_id = ep.id
-       WHERE ep.academic_period_id = ? OR (ep.academic_year = ? AND ep.semester = ?)`,
-      [id, targetPeriod?.academic_year || 'NULL_FALLBACK', targetPeriod?.semester || 'NULL_FALLBACK']
+       WHERE ep.academic_period_id = ?
+          OR (
+            ep.academic_year = ?
+            AND CAST(ep.semester AS CHAR) IN (?, ?, ?)
+          )`,
+      [id, targetPeriod.academic_year, semToken1, semToken2, semToken3]
     );
 
     // Deep cascade: Delete evaluations inside this academic period
     await query(
       `DELETE e FROM evaluations e
        JOIN evaluation_periods ep ON e.period_id = ep.id
-       WHERE ep.academic_period_id = ? OR (ep.academic_year = ? AND ep.semester = ?)`,
-      [id, targetPeriod?.academic_year || 'NULL_FALLBACK', targetPeriod?.semester || 'NULL_FALLBACK']
+       WHERE ep.academic_period_id = ?
+          OR (
+            ep.academic_year = ?
+            AND CAST(ep.semester AS CHAR) IN (?, ?, ?)
+          )`,
+      [id, targetPeriod.academic_year, semToken1, semToken2, semToken3]
     );
 
     // Deep cascade: Delete evaluation periods linked to this academic period
     await query(
-      'DELETE FROM evaluation_periods WHERE academic_period_id = ? OR (academic_year = ? AND semester = ?)', 
-      [id, targetPeriod?.academic_year || 'NULL_FALLBACK', targetPeriod?.semester || 'NULL_FALLBACK']
+      `DELETE FROM evaluation_periods
+       WHERE academic_period_id = ?
+          OR (
+            academic_year = ?
+            AND CAST(semester AS CHAR) IN (?, ?, ?)
+          )`,
+      [id, targetPeriod.academic_year, semToken1, semToken2, semToken3]
     );
 
     // Finally, delete the academic period itself
