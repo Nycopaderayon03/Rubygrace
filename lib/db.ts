@@ -22,6 +22,11 @@ const pool = globalForDb.__dbPool ?? mysql.createPool({
 async function ensureSchemaCompatibility() {
   const dbName = process.env.DB_NAME || 'cite_es';
   const requiredColumns = [
+    { table: 'courses', column: 'section', ddl: 'ALTER TABLE courses ADD COLUMN section VARCHAR(10) DEFAULT NULL' },
+    { table: 'courses', column: 'academic_year', ddl: 'ALTER TABLE courses ADD COLUMN academic_year VARCHAR(10) DEFAULT NULL' },
+    { table: 'courses', column: 'semester', ddl: 'ALTER TABLE courses ADD COLUMN semester INT DEFAULT NULL' },
+    { table: 'courses', column: 'course_program', ddl: "ALTER TABLE courses ADD COLUMN course_program ENUM('BSIT','BSEMC') DEFAULT NULL" },
+    { table: 'courses', column: 'year_level', ddl: 'ALTER TABLE courses ADD COLUMN year_level INT DEFAULT NULL' },
     { table: 'courses', column: 'is_archived', ddl: 'ALTER TABLE courses ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0' },
     { table: 'evaluations', column: 'is_archived', ddl: 'ALTER TABLE evaluations ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0' },
     { table: 'comments', column: 'is_archived', ddl: 'ALTER TABLE comments ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0' },
@@ -54,6 +59,59 @@ async function ensureSchemaCompatibility() {
     await connection.execute('UPDATE courses SET is_archived = 0 WHERE is_archived IS NULL');
     await connection.execute('UPDATE evaluations SET is_archived = 0 WHERE is_archived IS NULL');
     await connection.execute('UPDATE comments SET is_archived = 0 WHERE is_archived IS NULL');
+
+    // Ensure courses uniqueness matches assignment-level granularity.
+    // Legacy dumps sometimes enforce UNIQUE(code), which breaks multi-section scheduling.
+    const [indexRows] = await connection.execute(
+      `SELECT INDEX_NAME as index_name, NON_UNIQUE as non_unique, SEQ_IN_INDEX as seq_in_index, COLUMN_NAME as column_name
+       FROM INFORMATION_SCHEMA.STATISTICS
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'courses'
+       ORDER BY INDEX_NAME, SEQ_IN_INDEX`,
+      [dbName]
+    );
+
+    const indexMap = new Map<string, { nonUnique: number; columns: string[] }>();
+    for (const row of (Array.isArray(indexRows) ? indexRows : [])) {
+      const indexName = String((row as any).index_name || '');
+      if (!indexName) continue;
+      const item = indexMap.get(indexName) || { nonUnique: Number((row as any).non_unique || 1), columns: [] };
+      item.nonUnique = Number((row as any).non_unique || 1);
+      item.columns.push(String((row as any).column_name || '').toLowerCase());
+      indexMap.set(indexName, item);
+    }
+
+    const expectedColumns = [
+      'code',
+      'teacher_id',
+      'section',
+      'course_program',
+      'year_level',
+      'academic_year',
+      'semester',
+    ];
+
+    const hasExpectedUnique = Array.from(indexMap.values()).some((item) =>
+      item.nonUnique === 0 &&
+      item.columns.length === expectedColumns.length &&
+      item.columns.every((col, idx) => col === expectedColumns[idx])
+    );
+
+    if (!hasExpectedUnique) {
+      const uniqueIndexesToDrop = Array.from(indexMap.entries())
+        .filter(([name, item]) => item.nonUnique === 0 && name.toUpperCase() !== 'PRIMARY')
+        .map(([name]) => name);
+
+      for (const idx of uniqueIndexesToDrop) {
+        const escaped = idx.replace(/`/g, '``');
+        await connection.execute(`ALTER TABLE courses DROP INDEX \`${escaped}\``);
+      }
+
+      await connection.execute(
+        `ALTER TABLE courses
+         ADD UNIQUE KEY unique_course_assignment
+         (code, teacher_id, section, course_program, year_level, academic_year, semester)`
+      );
+    }
   } finally {
     connection.release();
   }

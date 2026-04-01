@@ -705,7 +705,7 @@ ALTER TABLE `audit_logs`
 --
 ALTER TABLE `courses`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `code` (`code`),
+  ADD UNIQUE KEY `unique_course_assignment` (`code`,`teacher_id`,`section`,`course_program`,`year_level`,`academic_year`,`semester`),
   ADD KEY `idx_teacher_id` (`teacher_id`),
   ADD KEY `idx_code` (`code`);
 

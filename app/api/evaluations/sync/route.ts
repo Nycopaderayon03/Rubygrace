@@ -3,6 +3,7 @@ import { query, queryOne } from '@/lib/db';
 
 import { verifyToken, getAuthToken } from '@/lib/auth';
 import { buildCurriculum } from '@/lib/curriculum';
+import { upsertCourseAssignment } from '@/lib/courses';
 
 /**
  * POST /api/evaluations/sync
@@ -174,21 +175,17 @@ export async function syncUserEvaluations(userId: string, role: string) {
             const subjectName = subjectNameMap[code] || code;
 
             // Find or create the course
-            let course: any = await queryOne(
-              `SELECT id FROM courses
-               WHERE code = ? AND teacher_id = ? AND section = ?
-                 AND course_program = ? AND year_level = ?
-                 AND academic_year = ? AND semester = ?`,
-              [code, instructorId, section, program, yearNum, period.academic_year, semesterNum]
-            );
-
-            if (!course) {
-              const insertResult: any = await query(
-                `INSERT INTO courses (code, name, teacher_id, section, course_program, year_level, academic_year, semester)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [code, subjectName, instructorId, section, program, yearNum, period.academic_year, semesterNum]
-              );
-              course = { id: insertResult.insertId };
+            const course = await upsertCourseAssignment({
+              code,
+              name: subjectName,
+              teacherId: instructorId,
+              section: section || null,
+              courseProgram: program || null,
+              yearLevel: yearNum || null,
+              academicYear: period.academic_year || null,
+              semester: semesterNum,
+            });
+            if (course.created) {
               coursesCreated++;
             }
 

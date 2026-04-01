@@ -13,7 +13,7 @@ Add yourself when you start work. Update status as you go.
 | claude-opus | Pre-slice + Slice 1 + Slice 3 + Eval Setup Overhaul | Complete | see Communication Log | 2026-03-18 |
 | copilot | Enrollment Feature | Planning | `agents/copilot/PLAN.md`, `database/schema.sql` | 2026-03-18 |
 | antigravity | Slice 3 | Complete | `app/teacher/layout.tsx`, `app/dean/reports/page.tsx`, `app/globals.css`, `app/dean/dashboard/page.tsx`, `app/dean/forms/page.tsx` | 2026-03-22 |
-| gpt-5-codex | Hotfix (Evaluation Forms) | Complete | `app/dean/forms/page.tsx`, `AGENTS.md` | 2026-04-02 |
+| gpt-5-codex | Runtime Stability + Enrollment Sync | Complete | `app/api/evaluations/route.ts`, `app/api/evaluations/sync/route.ts`, `lib/courses.ts`, `lib/db.ts`, `database/cite_es.sql`, `database/live_schema.sql`, `AGENTS.md` | 2026-04-02 |
 
 ---
 
@@ -311,6 +311,22 @@ Log your changes here so other agents have context. Most recent at the bottom.
 - Validation:
   - `npm run type-check` now passes.
   - local `npm run build` blocked by Windows file lock on `.next` artifact in this workspace; Docker production build path remains passing on server deploy.
+
+### gpt-5-codex â€” 2026-04-02
+**To**: All
+**Topic**: Duplicate `courses.code` crash fix for evaluation generation/submission
+
+- `lib/courses.ts` (new): Added `upsertCourseAssignment()` using `ON DUPLICATE KEY UPDATE` and `LAST_INSERT_ID(id)` to make course resolution safe across old/new MySQL index shapes.
+- `app/api/evaluations/route.ts`: Replaced direct find-then-insert logic with `upsertCourseAssignment()` in dean bulk generation to stop `ER_DUP_ENTRY` failures during form generation and submission flow.
+- `app/api/evaluations/sync/route.ts`: Applied the same course upsert flow to JIT student sync so student dashboard sync cannot fail on duplicate course codes.
+- `lib/db.ts`: Expanded schema compatibility bootstrap to:
+  - ensure scheduling columns exist on `courses` (`section`, `academic_year`, `semester`, `course_program`, `year_level`)
+  - auto-migrate legacy unique indexes on `courses` to assignment-level uniqueness:
+    - `UNIQUE(code, teacher_id, section, course_program, year_level, academic_year, semester)`
+- `database/cite_es.sql`, `database/live_schema.sql`: Aligned course unique index definitions with runtime expectations to avoid future environment drift.
+- Validation:
+  - `npm run type-check` passes.
+  - local `npm run build` still blocked by Windows file locks in `.next` (workspace process lock), not by TypeScript errors.
 
 ---
 
