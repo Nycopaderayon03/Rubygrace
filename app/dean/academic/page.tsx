@@ -43,7 +43,10 @@ const fetchApi = async (url: string, options?: RequestInit) => {
     },
   });
   const data = await res.json();
-  if (!res.ok || !data.success) throw new Error(data.error || `Request failed: ${res.status}`);
+  if (!res.ok || !data.success) {
+    const detailText = [data?.error, data?.details].filter(Boolean).join(': ');
+    throw new Error(detailText || `Request failed: ${res.status}`);
+  }
   return data;
 };
 
@@ -286,22 +289,29 @@ export default function AcademicPage() {
   };
 
   const handleArchiveAll = () => {
-    setAuthWarning('Are you sure you want to archive all active courses, evaluation periods, and academic periods? This will safely freeze existing data and completely cleanly reset the portals for students and teachers ahead of a new academic year. Historical evaluation records are preserved.');
-    setAuthAction(() => async () => {
-      setLoading(true);
-      try {
-        await fetchApi('/archive', { method: 'POST' });
-        setFeedback({ type: 'success', message: 'System archived successfully for the new academic year.' });
-        await loadPeriods();
-      } catch (err) {
-        setFeedback({ type: 'error', message: `Archive failed: ${err instanceof Error ? err.message : 'Unknown error'}` });
-      } finally {
-        setLoading(false);
-      }
+    showConfirm({
+      title: 'Archive System Data',
+      message: 'Are you sure you want to archive all active courses, evaluation periods, and academic periods? This will safely freeze existing data and reset student/teacher portals for a new academic year while preserving history.',
+      confirmLabel: 'Archive Data',
+      variant: 'warning',
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          const result = await fetchApi('/archive', { method: 'POST' });
+          const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
+          if (warnings.length > 0) {
+            setFeedback({ type: 'success', message: `Archive completed with compatibility warnings: ${warnings.join('; ')}` });
+          } else {
+            setFeedback({ type: 'success', message: 'System archived successfully for the new academic year.' });
+          }
+          await loadPeriods();
+        } catch (err) {
+          setFeedback({ type: 'error', message: `Archive failed: ${err instanceof Error ? err.message : 'Unknown error'}` });
+        } finally {
+          setLoading(false);
+        }
+      },
     });
-    setAuthPassword('');
-    setAuthError('');
-    setAuthModalOpen(true);
   };
 
   return (

@@ -5,7 +5,8 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   swcMinify: true,
-  disable: false, // Explicitly enable PWA even in development so the user can see the install prompt easily
+  // Keep PWA enabled in production, but disable it in development to avoid stale cached app/API behavior.
+  disable: process.env.NODE_ENV === 'development',
   workboxOptions: {
     disableDevLogs: true,
   },

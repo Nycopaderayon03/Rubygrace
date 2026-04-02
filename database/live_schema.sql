@@ -6,6 +6,7 @@ CREATE TABLE `academic_periods` (
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
   `is_active` tinyint(1) DEFAULT 0,
+  `is_archived` tinyint(1) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`)
@@ -191,4 +192,3 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

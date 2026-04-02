@@ -8,8 +8,14 @@ const globalForDb = globalThis as unknown as {
   __dbSchemaReady?: Promise<void>;
 };
 
+const resolvedDbPort = Number.parseInt(
+  process.env.DB_PORT || process.env.MYSQL_PORT || '',
+  10
+);
+
 const pool = globalForDb.__dbPool ?? mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
+  port: Number.isInteger(resolvedDbPort) ? resolvedDbPort : 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD as string,
   database: process.env.DB_NAME || 'cite_es',
@@ -27,6 +33,7 @@ async function ensureSchemaCompatibility() {
     { table: 'courses', column: 'semester', ddl: 'ALTER TABLE courses ADD COLUMN semester INT DEFAULT NULL' },
     { table: 'courses', column: 'course_program', ddl: "ALTER TABLE courses ADD COLUMN course_program ENUM('BSIT','BSEMC') DEFAULT NULL" },
     { table: 'courses', column: 'year_level', ddl: 'ALTER TABLE courses ADD COLUMN year_level INT DEFAULT NULL' },
+    { table: 'academic_periods', column: 'is_archived', ddl: 'ALTER TABLE academic_periods ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0' },
     { table: 'courses', column: 'is_archived', ddl: 'ALTER TABLE courses ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0' },
     { table: 'evaluations', column: 'is_archived', ddl: 'ALTER TABLE evaluations ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0' },
     { table: 'comments', column: 'is_archived', ddl: 'ALTER TABLE comments ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0' },
@@ -56,6 +63,7 @@ async function ensureSchemaCompatibility() {
     }
 
     // Normalize legacy NULL values so filtering logic behaves predictably.
+    await connection.execute('UPDATE academic_periods SET is_archived = 0 WHERE is_archived IS NULL');
     await connection.execute('UPDATE courses SET is_archived = 0 WHERE is_archived IS NULL');
     await connection.execute('UPDATE evaluations SET is_archived = 0 WHERE is_archived IS NULL');
     await connection.execute('UPDATE comments SET is_archived = 0 WHERE is_archived IS NULL');
@@ -164,7 +172,10 @@ export async function query(sql: string, values?: any[]) {
 
     if (isConnectivityError) {
       // Keep graceful behavior for infra/network outages.
-      console.warn('DB connectivity issue, returning empty result:', error);
+      console.warn(
+        `DB connectivity issue (${process.env.DB_HOST || 'localhost'}:${Number.isInteger(resolvedDbPort) ? resolvedDbPort : 3306}), returning empty result:`,
+        error
+      );
       return [];
     }
 
