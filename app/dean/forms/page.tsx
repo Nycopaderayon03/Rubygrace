@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -51,12 +51,11 @@ const FORM_TYPES = [
   { value: 'peer-review', label: 'Peer Review' },
 ];
 
-const generateId = () => {
-  if (typeof globalThis !== 'undefined' && typeof globalThis.crypto?.randomUUID === 'function') {
-    return globalThis.crypto.randomUUID();
-  }
+let localIdCounter = 0;
 
-  return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const generateId = () => {
+  localIdCounter += 1;
+  return `id-${Date.now()}-${localIdCounter}-${Math.random().toString(16).slice(2)}`;
 };
 
 export default function EvaluationFormsPage() {
@@ -146,6 +145,8 @@ export default function EvaluationFormsPage() {
       questions: [],
     };
 
+    setError('');
+    setSuccess('');
     setCriteria(prev => [...prev, newCriteria]);
     setExpandedCriteria(newCriteria.id);
   };
@@ -381,7 +382,7 @@ export default function EvaluationFormsPage() {
               <CardTitle>Evaluation Criteria</CardTitle>
               <CardDescription>Add criteria with weights that total 100%. Expand each to manage questions.</CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={addCriteria} className="gap-1">
+            <Button type="button" variant="outline" size="sm" onClick={addCriteria} className="gap-1">
               <Plus className="w-4 h-4" /> Add Criteria
             </Button>
           </div>
@@ -422,13 +423,14 @@ export default function EvaluationFormsPage() {
                   </div>
 
                   <div className="flex items-center gap-1 border-l border-gray-200 dark:border-gray-700 pl-4">
-                    <Button variant="outline" size="sm" onClick={() => openQuestions(c.id)} className="gap-2 shrink-0">
+                    <Button type="button" variant="outline" size="sm" onClick={() => openQuestions(c.id)} className="gap-2 shrink-0">
                       <Badge variant={(c.questions?.length || 0) > 0 ? 'success' : 'secondary'} className="px-1.5 min-w-[1.5rem] flex items-center justify-center">
                         {c.questions?.length || 0}
                       </Badge>
                       Questions
                     </Button>
                     <button
+                      type="button"
                       onClick={() => setExpandedCriteria(expandedCriteria === c.id ? null : c.id)}
                       className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
                       title="Toggle questions preview"
@@ -436,6 +438,7 @@ export default function EvaluationFormsPage() {
                       {expandedCriteria === c.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                     </button>
                     <button
+                      type="button"
                       onClick={() => removeCriteria(c.id)}
                       className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
                       title="Delete criteria"
@@ -451,7 +454,7 @@ export default function EvaluationFormsPage() {
                 <div className="p-4 sm:px-6">
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Questions under this criteria</h4>
-                    <Button variant="ghost" size="sm" onClick={() => openQuestions(c.id)} className="h-8 text-xs text-blue-600">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => openQuestions(c.id)} className="h-8 text-xs text-blue-600">
                       <Plus className="w-3 h-3 mr-1" /> Manage Questions
                     </Button>
                   </div>
@@ -470,7 +473,7 @@ export default function EvaluationFormsPage() {
                   ) : (
                     <div className="text-center py-4 bg-white dark:bg-gray-800 rounded border border-dashed border-gray-300 dark:border-gray-700">
                       <p className="text-sm text-gray-500">No questions added yet.</p>
-                      <Button variant="ghost" size="sm" onClick={() => openQuestions(c.id)} className="mt-2 text-blue-600">
+                      <Button type="button" variant="ghost" size="sm" onClick={() => openQuestions(c.id)} className="mt-2 text-blue-600">
                         Add Questions
                       </Button>
                     </div>
@@ -498,8 +501,8 @@ export default function EvaluationFormsPage() {
 
       {/* Save button */}
       <div className="flex justify-end gap-3">
-        <Button variant="outline" onClick={() => { setView('list'); resetEditor(); }}>Cancel</Button>
-        <Button variant="primary" onClick={saveForm} disabled={saving} isLoading={saving}>
+        <Button type="button" variant="outline" onClick={() => { setView('list'); resetEditor(); }}>Cancel</Button>
+        <Button type="button" variant="primary" onClick={saveForm} disabled={saving} isLoading={saving}>
           {editingFormId ? 'Update Form' : 'Create Form'}
         </Button>
       </div>
@@ -526,7 +529,7 @@ export default function EvaluationFormsPage() {
                 onKeyDown={e => { if (e.key === 'Enter') addQuestion(); }}
                 autoFocus
               />
-              <Button variant="primary" onClick={addQuestion} className="px-6">Add</Button>
+              <Button type="button" variant="primary" onClick={addQuestion} className="px-6">Add</Button>
             </div>
           </div>
 
@@ -545,6 +548,7 @@ export default function EvaluationFormsPage() {
                     </div>
                     <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{q.text}</span>
                     <button
+                      type="button"
                       onClick={() => removeQuestion(activeCriteria.id, q.id)}
                       className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition opacity-0 group-hover:opacity-100"
                       title="Delete question"
@@ -562,7 +566,7 @@ export default function EvaluationFormsPage() {
           </div>
 
           <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700 mt-6 pt-4">
-            <Button variant="primary" onClick={() => setQuestionModalOpen(false)}>Done</Button>
+            <Button type="button" variant="primary" onClick={() => setQuestionModalOpen(false)}>Done</Button>
           </div>
         </div>
       </Modal>

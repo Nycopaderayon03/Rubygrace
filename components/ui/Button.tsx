@@ -13,6 +13,7 @@ export function Button({
   href,
   variant = 'primary',
   size = 'md',
+  type,
   isLoading = false,
   disabled,
   children,
@@ -67,6 +68,7 @@ export function Button({
 
   return (
     <button
+      type={type || 'button'}
       disabled={disabled || isLoading}
       className={classNames}
       {...props}

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import Providers from './providers';
 import { Outfit } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 
 const outfit = Outfit({ subsets: ['latin'] });
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={outfit.className}>
+        <Script src="/crypto-randomuuid-polyfill.js" strategy="beforeInteractive" />
         <Providers>
           {children}
         </Providers>

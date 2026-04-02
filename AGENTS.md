@@ -13,7 +13,7 @@ Add yourself when you start work. Update status as you go.
 | claude-opus | Pre-slice + Slice 1 + Slice 3 + Eval Setup Overhaul | Complete | see Communication Log | 2026-03-18 |
 | copilot | Enrollment Feature | Planning | `agents/copilot/PLAN.md`, `database/schema.sql` | 2026-03-18 |
 | antigravity | Slice 3 | Complete | `app/teacher/layout.tsx`, `app/dean/reports/page.tsx`, `app/globals.css`, `app/dean/dashboard/page.tsx`, `app/dean/forms/page.tsx` | 2026-03-22 |
-| gpt-5-codex | Runtime Stability + Enrollment Sync | Complete | `app/api/evaluations/route.ts`, `app/api/evaluations/sync/route.ts`, `app/api/academic_periods/route.ts`, `app/api/archive/route.ts`, `app/dean/academic/page.tsx`, `app/providers.tsx`, `lib/courses.ts`, `lib/db.ts`, `database/cite_es.sql`, `database/live_schema.sql`, `next.config.js`, `docker-compose.yml`, `.env.local`, `.env.example`, `tools/migrate_archive_columns.js`, `package.json`, `AGENTS.md` | 2026-04-02 |
+| gpt-5-codex | Runtime Stability + Enrollment Sync | Complete | `app/api/evaluations/route.ts`, `app/api/evaluations/sync/route.ts`, `app/api/academic_periods/route.ts`, `app/api/archive/route.ts`, `app/dean/academic/page.tsx`, `app/dean/forms/page.tsx`, `app/providers.tsx`, `components/ui/Button.tsx`, `lib/courses.ts`, `lib/db.ts`, `database/cite_es.sql`, `database/live_schema.sql`, `next.config.js`, `docker-compose.yml`, `.env.local`, `.env.example`, `tools/migrate_archive_columns.js`, `package.json`, `AGENTS.md` | 2026-04-02 |
 
 ---
 
@@ -461,6 +461,50 @@ Log your changes here so other agents have context. Most recent at the bottom.
 - Validation:
   - `npm run db:archive-columns` passes locally.
   - `npm run type-check` passes.
+
+### gpt-5-codex - 2026-04-02
+**To**: All
+**Topic**: Evaluation Forms Add Criteria interaction fix
+
+- `app/dean/forms/page.tsx`: Fixed editor interactions where criteria/question action controls could behave like implicit submit actions in form-like contexts.
+  - Added explicit `type="button"` to action buttons in the forms editor and question modal.
+  - Added `setError('')` / `setSuccess('')` on `addCriteria()` so stale validation banners clear as soon as user adds a criterion.
+  - Removed unused `useCallback` import.
+- `components/ui/Button.tsx`: Set default native button type to `button` when no explicit `type` is provided, preventing accidental submit behavior across pages.
+- Validation:
+  - `npm run type-check` passes.
+
+### gpt-5-codex - 2026-04-02
+**To**: All
+**Topic**: randomUUID compatibility guard for Evaluation Forms
+
+- `app/dean/forms/page.tsx`: Replaced ID generation flow with a guaranteed-safe fallback (`Date.now + counter + Math.random`) so Add Criteria/Add Question never depend on `crypto.randomUUID`.
+- `app/layout.tsx`: Added a `beforeInteractive` `randomUUID` polyfill script to protect older/cached client bundles that still reference `crypto.randomUUID()` directly.
+- Validation:
+  - `npm run type-check` passes.
+  - `npm run build` passes.
+
+### gpt-5-codex - 2026-04-02
+**To**: All
+**Topic**: Persistent randomUUID crash self-heal (stale chunk mitigation)
+
+- `public/crypto-randomuuid-polyfill.js` (new): Added CSP-safe external pre-hydration polyfill for `window.crypto.randomUUID` (UUID v4 format fallback) so older browsers/stale chunks do not crash on Add Criteria click.
+- `app/layout.tsx`: Switched from inline polyfill to external `/crypto-randomuuid-polyfill.js` via `next/script` with `beforeInteractive`.
+- `app/providers.tsx`: Added one-time cache/service-worker reset migration (`ces_cache_reset_version=2026-04-02-randomuuid-fix-v2`) to automatically clear stale PWA assets and reload once after deploy.
+- `app/providers.tsx`: Added runtime `ensureRandomUuidSupport()` fallback as secondary guard.
+- Validation:
+  - `npm run type-check` passes.
+  - `npm run build` passes.
+
+### gpt-5-codex - 2026-04-02
+**To**: All
+**Topic**: Deployment compose port-collision hardening
+
+- `deployment/docker-compose.yml`:
+  - Removed host port publishing for `db` (`3307:3306`) and `redis` (`6379:6379`).
+  - Services remain reachable to `app` over the internal `cite_network` using service names (`db`, `redis`), while avoiding host-port bind conflicts with other local stacks.
+- Validation:
+  - `docker compose -f deployment/docker-compose.yml config --quiet` succeeds.
 
 ---
 
