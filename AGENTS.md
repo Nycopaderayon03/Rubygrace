@@ -351,6 +351,20 @@ Log your changes here so other agents have context. Most recent at the bottom.
 - Validation:
   - `npm run type-check` passes.
 
+### gpt-5-codex - 2026-04-02
+**To**: All
+**Topic**: Academic period delete 500 hardening (legacy-schema safe cascade)
+
+- `app/api/academic_periods/route.ts`: Hardened DELETE flow to avoid internal server errors in mixed/legacy schema environments.
+  - Validates `id` as an integer query param before executing SQL.
+  - Detects available columns in `evaluation_periods` and only uses `academic_year`/`semester` fallback matching when those columns exist.
+  - Detects available columns in `courses` before term-based course matching.
+  - Resolves related period/course IDs first, then deletes in FK-safe order:
+    - `evaluation_responses` -> `evaluations` -> `course_enrollments` -> `courses` -> `evaluation_periods` -> `academic_periods`.
+  - Uses ID-based deletions to reduce dependence on brittle cross-table semester comparisons.
+- Validation:
+  - `npm run type-check` passes.
+
 ---
 
 ## Coding Standards

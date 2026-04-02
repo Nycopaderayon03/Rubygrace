@@ -39,6 +39,18 @@ function normalizeSemesterTokens(raw: any) {
   return { s1, s2, s3 };
 }
 
+function uniqueIntIds(rows: any): number[] {
+  if (!Array.isArray(rows)) return [];
+  const ids = rows
+    .map((row: any) => Number(row?.id))
+    .filter((id: number) => Number.isInteger(id) && id > 0);
+  return Array.from(new Set(ids));
+}
+
+function placeholders(count: number): string {
+  return Array.from({ length: count }, () => '?').join(', ');
+}
+
 
 
 /**
@@ -216,8 +228,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     const url = new URL(request.url);
-    const id = url.searchParams.get('id');
-    if (!id) {
+    const idParam = url.searchParams.get('id');
+    const id = Number.parseInt(idParam ?? '', 10);
+    if (!Number.isInteger(id)) {
       return NextResponse.json({ error: 'id query param required' }, { status: 400 });
     }
 
@@ -228,66 +241,121 @@ export async function DELETE(request: NextRequest) {
 
     const { s1: semToken1, s2: semToken2, s3: semToken3 } = normalizeSemesterTokens(targetPeriod.semester);
 
+    const evaluationPeriodColumns: any = await query(
+      `SELECT COLUMN_NAME AS column_name
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'evaluation_periods'`
+    );
+    const evaluationPeriodColumnSet = new Set(
+      (Array.isArray(evaluationPeriodColumns) ? evaluationPeriodColumns : [])
+        .map((row: any) => String(row?.column_name || '').toLowerCase())
+    );
+    const canMatchLegacyEvaluationPeriods =
+      evaluationPeriodColumnSet.has('academic_year') &&
+      evaluationPeriodColumnSet.has('semester');
+
+    const relatedPeriodRows: any = canMatchLegacyEvaluationPeriods
+      ? await query(
+          `SELECT id FROM evaluation_periods
+           WHERE academic_period_id = ?
+              OR (
+                academic_year = ?
+                AND CAST(semester AS CHAR) IN (?, ?, ?)
+              )`,
+          [id, targetPeriod.academic_year, semToken1, semToken2, semToken3]
+        )
+      : await query(
+          `SELECT id FROM evaluation_periods
+           WHERE academic_period_id = ?`,
+          [id]
+        );
+    const relatedPeriodIds = uniqueIntIds(relatedPeriodRows);
+
+    const courseColumns: any = await query(
+      `SELECT COLUMN_NAME AS column_name
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'courses'`
+    );
+    const courseColumnSet = new Set(
+      (Array.isArray(courseColumns) ? courseColumns : [])
+        .map((row: any) => String(row?.column_name || '').toLowerCase())
+    );
+    const canMatchCoursesByTerm =
+      courseColumnSet.has('academic_year') &&
+      courseColumnSet.has('semester');
+
+    const relatedCourseRows: any = canMatchCoursesByTerm
+      ? await query(
+          `SELECT id FROM courses
+           WHERE academic_year = ?
+             AND CAST(semester AS CHAR) IN (?, ?, ?)`,
+          [targetPeriod.academic_year, semToken1, semToken2, semToken3]
+        )
+      : [];
+    const relatedCourseIds = uniqueIntIds(relatedCourseRows);
+
     // Deep cascade: Purge anonymous textual feedbacks submitted during this specific academic timeframe
     await query(
       'DELETE FROM comments WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?', 
       [targetPeriod.start_date, targetPeriod.end_date]
     );
 
-    // Deep cascade: Nuke active enrollments attached to courses mapped under this academic semester
-    await query(
-      `DELETE FROM course_enrollments
-       WHERE course_id IN (
-         SELECT id FROM courses
-         WHERE academic_year = ?
-           AND CAST(semester AS CHAR) IN (?, ?, ?)
-       )`,
-      [targetPeriod.academic_year, semToken1, semToken2, semToken3]
-    );
+    const evaluationFilters: string[] = [];
+    const evaluationFilterValues: any[] = [];
 
-    // Deep cascade: Delete the physical courses generated and attached to this academic semantic frame
-    await query(
-      `DELETE FROM courses
-       WHERE academic_year = ?
-         AND CAST(semester AS CHAR) IN (?, ?, ?)`,
-      [targetPeriod.academic_year, semToken1, semToken2, semToken3]
-    );
+    if (relatedPeriodIds.length > 0) {
+      evaluationFilters.push(`period_id IN (${placeholders(relatedPeriodIds.length)})`);
+      evaluationFilterValues.push(...relatedPeriodIds);
+    }
+    if (relatedCourseIds.length > 0) {
+      evaluationFilters.push(`course_id IN (${placeholders(relatedCourseIds.length)})`);
+      evaluationFilterValues.push(...relatedCourseIds);
+    }
 
-    // Deep cascade: Delete all evaluation responses linked to evaluations inside this academic period
-    await query(
-      `DELETE er FROM evaluation_responses er
-       JOIN evaluations e ON er.evaluation_id = e.id
-       JOIN evaluation_periods ep ON e.period_id = ep.id
-       WHERE ep.academic_period_id = ?
-          OR (
-            ep.academic_year = ?
-            AND CAST(ep.semester AS CHAR) IN (?, ?, ?)
-          )`,
-      [id, targetPeriod.academic_year, semToken1, semToken2, semToken3]
-    );
+    // Purge responses first to avoid FK conflicts in stricter DB variants.
+    if (evaluationFilters.length > 0) {
+      const evaluationWhere = evaluationFilters.join(' OR ');
+      await query(
+        `DELETE FROM evaluation_responses
+         WHERE evaluation_id IN (
+           SELECT id FROM evaluations
+           WHERE ${evaluationWhere}
+         )`,
+        evaluationFilterValues
+      );
 
-    // Deep cascade: Delete evaluations inside this academic period
-    await query(
-      `DELETE e FROM evaluations e
-       JOIN evaluation_periods ep ON e.period_id = ep.id
-       WHERE ep.academic_period_id = ?
-          OR (
-            ep.academic_year = ?
-            AND CAST(ep.semester AS CHAR) IN (?, ?, ?)
-          )`,
-      [id, targetPeriod.academic_year, semToken1, semToken2, semToken3]
-    );
+      await query(
+        `DELETE FROM evaluations
+         WHERE ${evaluationWhere}`,
+        evaluationFilterValues
+      );
+    }
 
-    // Deep cascade: Delete evaluation periods linked to this academic period
-    await query(
-      `DELETE FROM evaluation_periods
-       WHERE academic_period_id = ?
-          OR (
-            academic_year = ?
-            AND CAST(semester AS CHAR) IN (?, ?, ?)
-          )`,
-      [id, targetPeriod.academic_year, semToken1, semToken2, semToken3]
-    );
+    if (relatedCourseIds.length > 0) {
+      const courseIdPlaceholders = placeholders(relatedCourseIds.length);
+
+      // Remove enrollment links before deleting courses.
+      await query(
+        `DELETE FROM course_enrollments
+         WHERE course_id IN (${courseIdPlaceholders})`,
+        relatedCourseIds
+      );
+
+      await query(
+        `DELETE FROM courses
+         WHERE id IN (${courseIdPlaceholders})`,
+        relatedCourseIds
+      );
+    }
+
+    if (relatedPeriodIds.length > 0) {
+      const periodIdPlaceholders = placeholders(relatedPeriodIds.length);
+      await query(
+        `DELETE FROM evaluation_periods
+         WHERE id IN (${periodIdPlaceholders})`,
+        relatedPeriodIds
+      );
+    }
 
     // Finally, delete the academic period itself
     await query('DELETE FROM academic_periods WHERE id = ?', [id]);
